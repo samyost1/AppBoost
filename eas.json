@@ -1,0 +1,33 @@
+{
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "distribution": "internal",
+      "environment": "preview"
+    },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development"
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "autoIncrement": true,
+      "environment": "production"
+    },
+    "apk": {
+      "distribution": "internal",
+      "environment": "preview",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  },
+  "cli": {
+    "appVersionSource": "remote"
+  }
+}

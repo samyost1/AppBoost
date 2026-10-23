@@ -1,0 +1,148 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is an Expo React Native starter template for building mobile apps with monetization and user engagement features. It includes RevenueCat for in-app purchases/subscriptions, push notifications via Expo, and Supabase for authentication, database, and real-time features.
+
+## Development Commands
+
+### Running the App
+```bash
+npx expo start --dev-client  # Start development server with dev client
+npm run android              # Run on Android
+npm run ios                  # Run on iOS
+npm run web                  # Run on web
+```
+
+### Testing and Quality
+```bash
+npm test                     # Run Jest tests in watch mode
+npm run lint                 # Run Expo linter
+```
+
+### Building and Deployment
+```bash
+# EAS builds (requires EAS CLI: npm install -g eas-cli)
+eas build --platform android --profile preview    # APK for testing
+eas build --platform android --profile internal   # Internal test build (AAB)
+eas build --platform android --profile production # Production build (AAB)
+eas build --platform ios --profile [profile-name] # iOS builds
+```
+
+Available build profiles: `preview`, `internal`, `development`, `production`
+
+## Architecture
+
+### File-Based Routing (Expo Router)
+The app uses Expo Router for navigation with a file-based routing structure:
+- `app/_layout.jsx` - Root layout with providers and theme setup
+- `app/(tabs)/` - Tab-based navigation screens (index, explore, profile)
+- `app/paywall.jsx` - Standalone paywall screen
+- `app/onboardingScreen.jsx` - First-time user onboarding
+
+Navigation is handled automatically based on file structure. Use `router.push()`, `router.back()`, etc. from `expo-router` for programmatic navigation.
+
+### Provider Architecture
+The app uses a hierarchical context provider structure (outermost to innermost in `app/_layout.jsx`):
+
+1. **SupabaseProvider** (`app/providers/SupabaseProvider.jsx`) - Backend for authentication, database, and real-time features
+   - **Authentication**: Built-in magic link and OAuth (Google, Apple) support
+   - **User Management**: Exposes `user` object with email, id, and metadata
+   - **Auth Methods**: `sendMagicLink()`, `signInWithOAuth()`, `logout()`
+   - **Database Operations**: `insertData()`, `getData()`, `updateData()`, `deleteData()`
+   - **Real-time**: `subscribeToTable()`, `unsubscribe()`
+   - **Automatic Push Token Sync**: When configured, automatically saves push tokens to `expo_push_tokens` table
+   - **Automatic Subscription Sync**: When RevenueCat is also configured, syncs subscription data to `user_profiles` table
+   - Access via `useSupabase()` hook
+2. **PushNotificationProvider** - Handles push notification setup and permissions
+   - Automatically saves push tokens to Supabase (if configured)
+3. **RevenueCatProvider** (`app/providers/RevenueCatProvider.jsx`)
+   - Manages subscription state and in-app purchases
+   - Exposes: `user` (isPremium, willRenew), `packages`, `purchasePackage()`, `restorePermissions()`, `isReady`, `isConfigured`, `trialAvailable`
+   - Access via `useRevenueCat()` hook
+   - **Automatic Supabase Sync**: When Supabase is configured, automatically syncs subscription data to `user_profiles` table on any RevenueCat state change
+4. **UserDataProvider** (`app/providers/userDataProvider.jsx`)
+   - Manages user state flags with AsyncStorage
+   - Tracks: `isFirstTimeUser`, `hasReviewedApp`, `hasFinishedOnboarding`
+   - Access via `useUserData()` hook
+
+### Configuration Files
+- `config/paywall.js` - Paywall UI text, behavior (closable/non-closable), testimonials, and purchase completion callback
+- `config/revenueCat.js` - RevenueCat product IDs and entitlement IDs
+- `config/appConfig.js` - App metadata, package IDs, and **deep link scheme** (must match `app.json`)
+- `config/supabase.js` - Supabase backend configuration
+- `config/auth.js` - Authentication screen configuration (uses `appConfig.scheme` for redirect URI)
+- `config/toastConfig.js` - Toast notification styling
+
+### Deep Linking Configuration
+The app uses a **single scheme** for deep linking (auth redirects, etc.):
+- **Scheme source**: `expo.scheme` in `app.json` (automatically read at runtime via `expo-constants`)
+- **Auth redirect format**: `{scheme}://auth-callback`
+- **Example**: If scheme is `myapp`, redirect is `myapp://auth-callback`
+
+**Configuration**: Only set the scheme in `app.json` - the app reads it automatically. See `DEEP_LINKING_EXPLAINED.md` for details.
+
+### Component Organization
+- **`/components`** - Reusable UI components that MUST be used instead of recreated
+  - Generic components: Button, Input, Switch, Checkbox, Dialog, Tabs, etc.
+  - `/components/paywall` - Paywall-specific components (Header, Footer, Testimonials, PromoText)
+  - When creating new generic UI elements, save them here for reusability
+- **`/constants`** - Theme constants (Colors.js, Fonts.js)
+- **`/hooks`** - Custom hooks (useColorScheme, useFetch)
+
+### Environment Variables (.env)
+Required environment variables:
+```
+EXPO_PUBLIC_RC_APPLE_KEY=         # RevenueCat Apple key (required for payments)
+EXPO_PUBLIC_RC_GOOGLE_KEY=        # RevenueCat Google key (required for payments)
+EXPO_PUBLIC_PROJECT_ID=           # Expo project ID (optional, for push notifications)
+```
+
+
+The app gracefully handles missing optional configurations with console warnings.
+
+## Code Style Guidelines
+
+### Naming Conventions
+- **Variables/Functions**: camelCase (e.g., `isFetchingData`, `handleUserInput`)
+- **Components**: PascalCase (e.g., `UserProfile`, `Paywall`)
+- **Directories**: lowercase-hyphenated (e.g., `user-profile`, `paywall`)
+
+### Component Standards
+- Use functional components with hooks (useState, useEffect)
+- Prefer component modularity - single responsibility principle
+- Use React.memo() for components to prevent unnecessary re-renders
+- Avoid anonymous functions in renderItem or event handlers
+- Organize files by feature in feature-based directories
+
+### Performance
+- Use FlashList for large lists (already included: `@shopify/flash-list`)
+- Optimize state management - avoid unnecessary state updates, use local state when possible
+- Use optimized image libraries (expo-image is configured)
+
+### Styling
+- Use StyleSheet.create() for consistent styling
+- Design must adapt to various screen sizes and orientations
+- The app supports both light and dark themes (uses `@react-navigation/native` ThemeProvider)
+
+## Key Dependencies
+- **Expo SDK 52** with new architecture enabled
+- **RevenueCat** (`react-native-purchases`, `react-native-purchases-ui`) - Subscriptions
+- **Expo Router 4** - File-based navigation
+- **React Native Reanimated** - Animations
+- **Supabase** (`@supabase/supabase-js`) - Backend, auth, database
+- **FlashList** - High-performance lists
+- **Toast Messages** (`react-native-toast-message`) - User feedback
+
+## RevenueCat Integration Notes
+- Products must be configured in App Store Connect, Play Store, and RevenueCat dashboard
+- Update `config/revenueCat.js` with actual product IDs and entitlements
+- The paywall automatically detects free trial availability
+- Premium status is checked on app start and updated via listener
+- App functions without RevenueCat keys but shows console warnings
+
+## Testing Setup
+- Jest configured with `jest-expo` preset
+- Run tests with `npm test` for watch mode
