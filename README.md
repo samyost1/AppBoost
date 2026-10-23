@@ -29,9 +29,9 @@ For complete setup instructions, configuration guides, and component documentati
 ### Key Documentation Pages
 
 - [Getting Started](https://appboost.dev/docs) - Installation and setup
-- [Configuration](https://appboost.dev/docs/Configuration) - RevenueCat, Push Notifications, Supabase
-- [Features](https://appboost.dev/docs/features) - Paywall, Onboarding, Push Notifications
-- [Components](https://appboost.dev/docs/Components) - UI component library
+- [Configuration](https://appboost.dev/docs/Configuration/general) - RevenueCat, Push Notifications, Supabase
+- [Features](https://appboost.dev/docs/features/Payments) - Paywall, Onboarding, Push Notifications
+- [Components](https://appboost.dev/docs/Components/Button) - UI component library
 
 ## Support
 
